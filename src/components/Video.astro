@@ -1,0 +1,116 @@
+---
+import { fetchRelatedVideos } from '../pages/api/videos';
+
+interface Field<T> { value: T }
+interface ImageValue { src?: string; alt?: string; width?: string; height?: string }
+
+interface LinkValue { href?: string; url?: string; text?: string; target?: string; linktype?: string }
+
+interface Props {
+  fields?: {
+    title?: Field<string>;
+    caption?: Field<string>;
+    image?: Field<ImageValue>;
+    image2?: Field<ImageValue>;
+    video?: Field<string | LinkValue>;
+  };
+  params?: Record<string, string | undefined>;
+}
+
+const { fields } = Astro.props;
+
+const title = fields?.title?.value;
+const caption = fields?.caption?.value;
+const image = fields?.image?.value;
+
+function extractUrl(value: string | LinkValue | undefined): string | null {
+  if (!value) return null;
+  if (typeof value === 'object') return value.href ?? value.url ?? null;
+  const m = value.match(/url="([^"]+)"/);
+  return m ? m[1] : null;
+}
+const videoUrl = extractUrl(fields?.video?.value);
+
+// Astro: GraphQL fetched SERVER-SIDE in frontmatter. Zero JS shipped to the browser.
+let relatedVideos: Awaited<ReturnType<typeof fetchRelatedVideos>> = [];
+let relatedError: string | null = null;
+try {
+  relatedVideos = await fetchRelatedVideos();
+} catch (e) {
+  relatedError = e instanceof Error ? e.message : 'GraphQL fetch failed';
+}
+---
+
+<section class="w-full bg-neutral-950 text-white py-16 md:py-24">
+  <div class="max-w-6xl mx-auto px-8">
+    <!-- Hero video block (rendered from the rendering's own fields) -->
+    {(title || caption || image?.src || videoUrl) && (
+      <div class="mb-16">
+        {image?.src && (
+          <a href={videoUrl ?? '#'} target={videoUrl ? '_blank' : undefined} rel={videoUrl ? 'noopener noreferrer' : undefined} class="block relative aspect-video rounded-2xl overflow-hidden group">
+            <img src={image.src} alt={image.alt ?? ''} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            {videoUrl && (
+              <div class="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                <div class="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center shadow-2xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-neutral-900 ml-1"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+              </div>
+            )}
+          </a>
+        )}
+        {title && <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mt-8">{title}</h2>}
+        {caption && <p class="text-neutral-400 text-lg mt-4 max-w-3xl">{caption}</p>}
+      </div>
+    )}
+
+    <!-- GraphQL-powered "More videos" grid -->
+    <div class="border-t border-neutral-800 pt-12">
+      <div class="flex items-center gap-3 mb-6">
+        <h3 class="text-xl font-semibold">More from the video library</h3>
+        <code class="text-xs text-lime-400/70 bg-neutral-900 px-2 py-1 rounded">
+          Astro: frontmatter → client.getData(GraphQL) · server-rendered, 0 JS
+        </code>
+      </div>
+
+      {relatedError && (
+        <p class="text-red-400 text-sm">{relatedError}</p>
+      )}
+
+      {!relatedError && relatedVideos.length === 0 && (
+        <p class="text-neutral-500 text-sm">No related videos found.</p>
+      )}
+
+      {!relatedError && relatedVideos.length > 0 && (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {relatedVideos.map((v) => (
+            <a
+              href={v.videoUrl ?? '#'}
+              target={v.videoUrl ? '_blank' : undefined}
+              rel={v.videoUrl ? 'noopener noreferrer' : undefined}
+              class="group block"
+            >
+              <div class="aspect-video rounded-xl overflow-hidden bg-neutral-900 relative">
+                {v.imageSrc ? (
+                  <img src={v.imageSrc} alt={v.imageAlt} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                  <div class="w-full h-full bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center text-neutral-600 text-xs">no thumbnail</div>
+                )}
+                {v.videoUrl && (
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                    <div class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-neutral-900 ml-0.5"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <h4 class="font-semibold mt-3 group-hover:text-lime-400 transition-colors">
+                {v.title || v.name}
+              </h4>
+              {v.caption && <p class="text-sm text-neutral-500 mt-1 line-clamp-2">{v.caption}</p>}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/* Hide Sitecore editor chrome markers from visible rendering.
+   The XM Pages editor reads these <code class="scpm"> elements via
+   JavaScript; they should not appear as text on the page itself. */
+code.scpm {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}

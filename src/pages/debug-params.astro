@@ -1,0 +1,32 @@
+---
+import client from '../lib/sitecore-client';
+
+const page = await client.getPage('/', { site: 'sync', locale: 'en' });
+const route = page?.layout?.sitecore?.route;
+const placeholders = (route?.placeholders ?? {}) as Record<string, any[]>;
+
+function inventory(renderings: any[], depth = 0): any[] {
+  const out: any[] = [];
+  for (const r of renderings) {
+    out.push({
+      depth,
+      name: r.componentName,
+      params: r.params ?? {},
+    });
+    const nested = Object.values(r.placeholders ?? {}).flat() as any[];
+    out.push(...inventory(nested, depth + 1));
+  }
+  return out;
+}
+
+const all = ['headless-header', 'headless-main', 'headless-footer'].flatMap((key) =>
+  inventory(placeholders[key] ?? [])
+);
+---
+
+<html>
+  <body>
+    <h1>Component inventory</h1>
+    <pre>{JSON.stringify(all, null, 2)}</pre>
+  </body>
+</html>

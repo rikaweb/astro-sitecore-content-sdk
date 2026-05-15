@@ -1,0 +1,79 @@
+---
+import client from '../lib/sitecore-client';
+import PlaceholderRenderer from '../components/PlaceholderRenderer.astro';
+import EditingScripts from '../components/EditingScripts.astro';
+import '../styles/global.css';
+
+const rawPath = Astro.params.path ?? '';
+const segments = rawPath.split('/').filter(Boolean);
+const routePath = segments.length ? `/${segments.join('/')}` : '/';
+
+const sp = Astro.url.searchParams;
+const isEditMode = sp.get('sc_mode') === 'edit';
+const scSite = sp.get('sc_site') ?? 'sync';
+const scLang = sp.get('sc_lang') ?? 'en';
+
+const itemId = sp.get('sc_itemid') ?? sp.get('itemId');
+const layoutKind = sp.get('sc_layoutKind') ?? sp.get('layoutKind') ?? 'final';
+const version = sp.get('sc_version') ?? sp.get('version') ?? '1';
+const variantIds = (sp.get('sc_variant') ?? sp.get('variantIds') ?? '').split(',').filter(Boolean);
+
+let page: any = null;
+
+if (isEditMode && itemId) {
+  try {
+    page = await (client as any).getPreview({
+      site: scSite,
+      itemId,
+      language: scLang,
+      version,
+      layoutKind,
+      mode: 'edit',
+      variantIds: variantIds.length ? variantIds : [''],
+    });
+  } catch (err) {
+    console.warn('[edit-mode] getPreview failed, falling back to getPage:', err);
+  }
+}
+
+if (!page) {
+  page = await client.getPage(routePath, { site: scSite, locale: scLang });
+}
+
+if (!page) {
+  return new Response('Not found', { status: 404 });
+}
+
+const route = page.layout.sitecore.route;
+const title = (route?.fields as any)?.Title?.value ?? 'Page';
+const placeholders = (route?.placeholders ?? {}) as Record<string, any[]>;
+const sitecoreContext = page.layout.sitecore.context as any;
+
+if (!isEditMode) {
+  Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header>
+      <PlaceholderRenderer renderings={placeholders['headless-header'] ?? []} editMode={isEditMode} />
+    </header>
+
+    <main>
+      <PlaceholderRenderer renderings={placeholders['headless-main'] ?? []} editMode={isEditMode} />
+    </main>
+
+    <footer>
+      <PlaceholderRenderer renderings={placeholders['headless-footer'] ?? []} editMode={isEditMode} />
+    </footer>
+
+    {isEditMode && <EditingScripts context={sitecoreContext} />}
+  </body>
+</html>

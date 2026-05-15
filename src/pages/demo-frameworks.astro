@@ -1,0 +1,67 @@
+---
+import ReactSiteList from '../components/demo/ReactSiteList.tsx';
+import VueSiteList from '../components/demo/VueSiteList.vue';
+import SvelteSiteList from '../components/demo/SvelteSiteList.svelte';
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Multi-framework on one Astro page</title>
+  </head>
+  <body class="bg-neutral-950 text-white min-h-screen">
+    <div class="max-w-6xl mx-auto px-8 py-16">
+      <header class="mb-12">
+        <p class="text-lime-400 font-semibold tracking-widest text-sm uppercase mb-3">
+          Multi-framework demo
+        </p>
+        <h1 class="text-4xl sm:text-5xl font-black tracking-tight mb-4">
+          One page. Three frameworks. <span class="text-lime-400">One Sitecore.</span>
+        </h1>
+        <p class="text-neutral-400 text-lg max-w-2xl">
+          Three islands hydrated below, each in its own framework. All three call the
+          same <code class="text-lime-400/80 bg-neutral-900 px-2 py-0.5 rounded text-sm">/api/sites</code>
+          endpoint that proxies a Sitecore Edge GraphQL query. Astro
+          server-renders the HTML, then mounts each island with its own
+          framework runtime — independently, lazily, side-by-side.
+        </p>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <ReactSiteList client:load />
+        <VueSiteList client:load />
+        <SvelteSiteList client:load />
+      </div>
+
+      <section class="border-t border-neutral-800 pt-8">
+        <h2 class="font-bold text-xl mb-4">How this works</h2>
+        <ul class="space-y-3 text-neutral-300 text-sm leading-relaxed">
+          <li>
+            <strong class="text-white">Same Sitecore data, same HTTP endpoint.</strong>
+            All three call <code class="text-neutral-400">fetch('/api/sites')</code>.
+          </li>
+          <li>
+            <strong class="text-white">Each island ships its framework, only when needed.</strong>
+            Open DevTools → Network → JS, and you'll see three small framework runtimes
+            load <em>independently</em>. Remove any one component, that framework's
+            runtime disappears from the page entirely.
+          </li>
+          <li>
+            <strong class="text-white">The wrapper is zero-JS.</strong>
+            This <code class="text-neutral-400">demo-frameworks.astro</code> page itself ships no
+            JavaScript — only the three islands do. The header you're reading is plain HTML.
+          </li>
+          <li>
+            <strong class="text-white">No `'use client'` mental tax.</strong>
+            The hydration directive lives on the mount site
+            (<code class="text-neutral-400">&lt;ReactSiteList client:load /&gt;</code>),
+            not inside the component file. Same for Vue and Svelte.
+          </li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,171 @@
+---
+interface FieldWithMeta<T> { value: T; metadata?: Record<string, unknown> }
+interface ImageValue { src?: string; alt?: string; width?: string | number; height?: string | number }
+interface LinkValue { href?: string; text?: string; target?: string }
+
+interface Props {
+  fields?: {
+    Eyebrow?: FieldWithMeta<string>;
+    Title?: FieldWithMeta<string>;
+    Link1?: FieldWithMeta<LinkValue>;
+    Link2?: FieldWithMeta<LinkValue>;
+    Image1?: FieldWithMeta<ImageValue>;
+    Image2?: FieldWithMeta<ImageValue>;
+  };
+  params?: { FieldNames?: string; [key: string]: string | undefined };
+  editMode?: boolean;
+}
+
+const { fields, params, editMode = false } = Astro.props;
+const variant = params?.FieldNames || 'Default';
+
+const eyebrow = fields?.Eyebrow?.value;
+const title = fields?.Title?.value;
+const titleMeta = fields?.Title?.metadata;
+const link1 = fields?.Link1?.value;
+const link2 = fields?.Link2?.value;
+const image1 = fields?.Image1?.value;
+const image2 = fields?.Image2?.value;
+
+const hasContent = eyebrow || title || link1?.href || link2?.href || image1?.src;
+
+const titleChromeOpen = editMode && titleMeta
+  ? `<code type="text/sitecore" chrometype="field" class="scpm" kind="open">${JSON.stringify(titleMeta).replace(/</g, '&lt;')}</code>`
+  : '';
+const titleChromeClose = editMode && titleMeta
+  ? '<code type="text/sitecore" chrometype="field" class="scpm" kind="close"></code>'
+  : '';
+
+const titleClass = 'text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black uppercase tracking-tighter leading-[0.85] mb-10';
+const titleColorDefault = 'text-neutral-900';
+const titleColorCentered = 'text-white';
+
+const primaryBtn = 'h-12 px-8 text-sm font-semibold rounded-full bg-lime-400 text-neutral-900 hover:bg-lime-300 border-0 shadow-lg shadow-lime-400/30 inline-flex items-center justify-center cursor-pointer';
+const secondaryBtn = 'h-12 px-8 text-sm font-semibold rounded-full bg-white/80 backdrop-blur-sm border border-neutral-300 text-neutral-800 hover:bg-white hover:border-neutral-400 inline-flex items-center justify-center cursor-pointer';
+---
+
+{!hasContent && (
+  <section class="relative min-h-screen flex items-center justify-center bg-neutral-100">
+    <div class="text-center text-neutral-500">
+      <p class="text-lg">HeroST — No content available</p>
+    </div>
+  </section>
+)}
+
+{hasContent && variant === 'Centered' && (
+  <section class="relative min-h-screen w-full overflow-hidden">
+    {image1?.src && (
+      <div class="absolute inset-0 z-0">
+        <img src={image1.src} alt={image1.alt ?? ''} class="w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-black/50" />
+      </div>
+    )}
+    <div class="relative z-10 flex flex-col items-center justify-center min-h-screen px-8 py-24 text-center">
+      {eyebrow && (
+        <span class="inline-block text-base sm:text-lg font-bold tracking-wide uppercase text-lime-400 mb-4">{eyebrow}</span>
+      )}
+      {title && (
+        <>
+          <Fragment set:html={titleChromeOpen} />
+          <h1 class={`${titleClass} ${titleColorCentered}`}>{title}</h1>
+          <Fragment set:html={titleChromeClose} />
+        </>
+      )}
+      {(link1?.href || link2?.href) && (
+        <div class="flex flex-wrap items-center justify-center gap-4">
+          {link1?.href && (
+            <a href={link1.href} target={link1.target} class={primaryBtn}>{link1.text || 'Learn more'}</a>
+          )}
+          {link2?.href && (
+            <a href={link2.href} target={link2.target} class={secondaryBtn}>{link2.text || 'Buy'}</a>
+          )}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+
+{hasContent && variant === 'Stacked' && (
+  <section class="relative w-full bg-neutral-50 overflow-hidden">
+    <div class="relative w-full min-h-[40vh] lg:min-h-[60vh]">
+      {image1?.src ? (
+        <img src={image1.src} alt={image1.alt ?? ''} class="absolute inset-0 w-full h-full object-cover object-center" />
+      ) : (
+        <div class="absolute inset-0 bg-linear-to-br from-sky-400 via-sky-300 to-sky-200" />
+      )}
+    </div>
+    <div class="relative flex items-center justify-center lg:justify-start w-full py-16 lg:py-24">
+      <div class="relative z-10 px-8 sm:px-12 lg:px-16 xl:px-24 py-16 lg:py-24 max-w-2xl">
+        {eyebrow && (
+          <span class="inline-block text-base sm:text-lg font-bold tracking-wide uppercase text-lime-400 mb-4">{eyebrow}</span>
+        )}
+        {title && (
+          <>
+            <Fragment set:html={titleChromeOpen} />
+            <h1 class={`${titleClass} ${titleColorDefault}`}>{title}</h1>
+            <Fragment set:html={titleChromeClose} />
+          </>
+        )}
+        {(link1?.href || link2?.href) && (
+          <div class="flex flex-wrap items-center gap-4">
+            {link1?.href && <a href={link1.href} target={link1.target} class={primaryBtn}>{link1.text || 'Learn more'}</a>}
+            {link2?.href && <a href={link2.href} target={link2.target} class={secondaryBtn}>{link2.text || 'Buy'}</a>}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+
+{hasContent && (variant === 'Default' || variant === 'Right' || variant === 'SplitScreen') && (
+  <section class="relative min-h-screen w-full bg-neutral-50 overflow-hidden">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      {variant === 'Right' && (
+        <div class={`relative w-full ${variant === 'SplitScreen' ? 'lg:w-1/2' : 'lg:w-[40%]'} min-h-[50vh] lg:min-h-screen`}>
+          {image1?.src ? (
+            <img src={image1.src} alt={image1.alt ?? ''} class="absolute inset-0 w-full h-full object-cover object-center" />
+          ) : (
+            <div class="absolute inset-0 bg-linear-to-br from-sky-400 via-sky-300 to-sky-200" />
+          )}
+        </div>
+      )}
+
+      <div class={`relative flex items-center justify-center lg:justify-start w-full ${variant === 'SplitScreen' ? 'lg:w-1/2' : 'lg:w-[60%]'} min-h-[50vh] lg:min-h-screen`}>
+        {image2?.src && (
+          <div class="absolute inset-0 z-0">
+            <img src={image2.src} alt={image2.alt ?? ''} class="w-full h-full object-cover" />
+            <div class="absolute inset-0 backdrop-blur-2xl bg-white/30" />
+          </div>
+        )}
+        <div class="relative z-10 px-8 sm:px-12 lg:px-16 xl:px-24 py-16 lg:py-24 max-w-2xl">
+          {eyebrow && (
+            <span class="inline-block text-base sm:text-lg font-bold tracking-wide uppercase text-lime-400 mb-4">{eyebrow}</span>
+          )}
+          {title && (
+            <>
+              <Fragment set:html={titleChromeOpen} />
+              <h1 class={`${titleClass} ${titleColorDefault}`}>{title}</h1>
+              <Fragment set:html={titleChromeClose} />
+            </>
+          )}
+          {(link1?.href || link2?.href) && (
+            <div class="flex flex-wrap items-center gap-4">
+              {link1?.href && <a href={link1.href} target={link1.target} class={primaryBtn}>{link1.text || 'Learn more'}</a>}
+              {link2?.href && <a href={link2.href} target={link2.target} class={secondaryBtn}>{link2.text || 'Buy'}</a>}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {(variant === 'Default' || variant === 'SplitScreen') && (
+        <div class={`relative w-full ${variant === 'SplitScreen' ? 'lg:w-1/2' : 'lg:w-[40%]'} min-h-[50vh] lg:min-h-screen`}>
+          {image1?.src ? (
+            <img src={image1.src} alt={image1.alt ?? ''} class="absolute inset-0 w-full h-full object-cover object-center" />
+          ) : (
+            <div class="absolute inset-0 bg-linear-to-br from-sky-400 via-sky-300 to-sky-200" />
+          )}
+        </div>
+      )}
+    </div>
+  </section>
+)}

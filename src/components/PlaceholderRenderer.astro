@@ -1,0 +1,41 @@
+---
+import HeroST from './HeroST.astro';
+import HeaderST from './HeaderST.astro';
+import SignupBanner from './SignupBanner.astro';
+import Video from './Video.astro';
+import MissingComponent from './MissingComponent.astro';
+
+const components: Record<string, any> = {
+  HeroST,
+  HeaderST,
+  SignupBanner,
+  Video,
+};
+
+interface Rendering {
+  uid?: string;
+  componentName: string;
+  fields?: Record<string, any>;
+  placeholders?: Record<string, Rendering[]>;
+  params?: Record<string, string>;
+}
+
+interface Props {
+  renderings: Rendering[];
+  editMode?: boolean;
+}
+
+const { renderings, editMode = false } = Astro.props;
+---
+
+{renderings.map((r) => {
+  if (r.componentName === 'PartialDesignDynamicPlaceholder') {
+    const nested = Object.values(r.placeholders ?? {}).flat();
+    return <Astro.self renderings={nested} editMode={editMode} />;
+  }
+
+  const Comp = components[r.componentName];
+  return Comp
+    ? <Comp fields={r.fields} params={r.params} editMode={editMode} />
+    : <MissingComponent name={r.componentName} />;
+})}
