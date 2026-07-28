@@ -59,7 +59,6 @@ export const GET: APIRoute = ({ request, url }) => {
         '@astrojs/react': '5.x',
         '@astrojs/vercel': '10.x',
         '@sitecore-content-sdk/core': '1.4.x',
-        '@sitecore-content-sdk/react': '1.4.x',
       },
       editMode: 'metadata',
     }),
